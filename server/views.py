@@ -1,3 +1,6 @@
+from fnmatch import filter
+
+from rest_framework.request import Request
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
@@ -8,8 +11,28 @@ from django.shortcuts import get_object_or_404
 from django.contrib.auth.models import User
 from rest_framework.authtoken.models import Token
 
-from .serializers import UserSerializer
+from server.models import Network
+
+from .serializers import NetworkSerializer, UserSerializer
 from pprint import pprint
+
+
+@api_view(['POST'])
+def add_seen_networks(request):
+    pprint(request.data)
+    networks = []
+
+    # Expecting a 'networks' key in the request data
+    for network in request.data.get('networks', []):
+        serializer = NetworkSerializer(data=network)
+        if not serializer.is_valid():
+            return Response({'message': 'error while serializing networks'}, status=status.HTTP_400_BAD_REQUEST)
+        network_instance = serializer.save()
+        networks.append(serializer.data)
+
+    res = {'message': networks}
+    pprint(res)
+    return Response(res)
 
 @api_view(['POST'])
 def signup(request):
