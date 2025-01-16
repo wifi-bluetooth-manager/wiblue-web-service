@@ -9,6 +9,7 @@ from django.contrib.auth.models import User
 from rest_framework.authtoken.models import Token
 
 from .serializers import UserSerializer
+from pprint import pprint
 
 @api_view(['POST'])
 def signup(request):
@@ -29,31 +30,85 @@ def signup(request):
         user_data = serializer.data
         user_data.pop('password', None)
 
-        return Response({'token': token.key, 'message': { 'user': user_data}})
+        res = {'token': token.key, 'message': { 'user': user_data}}
+        pprint(res)
+
+        return Response(res)
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(['POST'])
 def login_username(request):
-    user = get_object_or_404(User, username=request.data['username'])
-    if not user.check_password(request.data['password']):
-        return Response("missing user", status=status.HTTP_404_NOT_FOUND)
-    token, created = Token.objects.get_or_create(user=user)
-    serializer = UserSerializer(user)
-    return Response({'token': token.key, 'user': serializer.data})
+    username = request.data.get('username')
+    password = request.data.get('password')
 
-@api_view(['POST'])
-def login_email(request):
-    user = get_object_or_404(User,email=request.data['email'])
-    if not user.check_password(request.data['password']):
-        return Response("missing user", status=status.HTTP_404_NOT_FOUND)
+    if not username:
+        res = {"message": "Username is required."}
+        pprint(res)
+        return Response(res, status=status.HTTP_400_BAD_REQUEST)
+
+    if not password:
+        res = {"message": "Password is required."}
+        pprint(res)
+        return Response(res, status=status.HTTP_400_BAD_REQUEST)
+
+    user = User.objects.filter(username=username).first()
+
+    if not user:
+        res = {"message": "User with this username does not exist."}
+        pprint(res)
+        return Response(res, status=status.HTTP_404_NOT_FOUND)
+
+    if not user.check_password(password):
+        res = {"message": "Incorrect password."}
+        pprint(res)
+        return Response(res, status=status.HTTP_400_BAD_REQUEST)
+
     token, created = Token.objects.get_or_create(user=user)
     serializer = UserSerializer(user)
 
     user_data = serializer.data
     user_data.pop('password', None)
 
-    return Response({'token': token.key, 'message': { 'user': user_data}})
+    res = {'token': token.key, 'message': {'user': user_data}}
+    pprint(res)
+    return Response(res)
+
+@api_view(['POST'])
+def login_email(request):
+    email = request.data.get('email')
+    password = request.data.get('password')
+
+    if not email:
+        res = {"message": "Email is required."}
+        pprint(res)
+        return Response(res, status=status.HTTP_400_BAD_REQUEST)
+
+    if not password:
+        res = {"message": "Password is required."}
+        pprint(res)
+        return Response(res, status=status.HTTP_400_BAD_REQUEST)
+
+    user = User.objects.filter(email=email).first()
+
+    if not user:
+        res = {"message": "User with this username does not exist."}
+        pprint(res)
+        return Response(res, status=status.HTTP_404_NOT_FOUND)
+
+    if not user.check_password(password):
+        res = {"message": "Incorrect password."}
+        pprint(res)
+        return Response(res, status=status.HTTP_400_BAD_REQUEST)
+
+    token, created = Token.objects.get_or_create(user=user)
+    serializer = UserSerializer(user)
+
+    user_data = serializer.data
+    user_data.pop('password', None)
+
+    res = {'token': token.key, 'message': {'user': user_data}}
+    pprint(res)
+    return Response(res)
 
 
 @api_view(['GET'])
