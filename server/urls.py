@@ -17,7 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, re_path
 
-from server.views import login_username, login_email, signup, test_token, add_seen_networks
+from server.views import get_user_by_token, login_username, login_email, signup, test_token, add_seen_networks
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -25,5 +25,6 @@ urlpatterns = [
     re_path('login_email', login_email),
     re_path('signup', signup),
     re_path('test_token', test_token),
-    re_path('add_seen_networks', add_seen_networks)
+    re_path('add_seen_networks', add_seen_networks),
+    re_path('user_by_token', get_user_by_token)
 ]

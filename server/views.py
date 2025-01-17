@@ -20,17 +20,23 @@ from pprint import pprint
 @api_view(['POST'])
 def add_seen_networks(request):
     pprint(request.data)
-    networks = []
 
     # Expecting a 'networks' key in the request data
     for network in request.data.get('networks', []):
         serializer = NetworkSerializer(data=network)
         if not serializer.is_valid():
+            if "bssid" in serializer.errors and "unique" in str(serializer.errors["bssid"]):
+                continue
             return Response({'message': 'error while serializing networks'}, status=status.HTTP_400_BAD_REQUEST)
-        network_instance = serializer.save()
-        networks.append(serializer.data)
+        serializer.save()
 
-    res = {'message': networks}
+    all_networks = Network.objects.all()
+    all_networks_serializer = NetworkSerializer(all_networks, many=True)
+
+    # Construct the response
+    res = {
+        'message': all_networks_serializer.data,
+    }
     pprint(res)
     return Response(res)
 
@@ -53,7 +59,7 @@ def signup(request):
         user_data = serializer.data
         user_data.pop('password', None)
 
-        res = {'token': token.key, 'message': { 'user': user_data}}
+        res = {'message': { 'user': user_data, 'token': token.key}}
         pprint(res)
 
         return Response(res)
@@ -92,7 +98,7 @@ def login_username(request):
     user_data = serializer.data
     user_data.pop('password', None)
 
-    res = {'token': token.key, 'message': {'user': user_data}}
+    res = {'message': {'user': user_data, 'token': token.key}}
     pprint(res)
     return Response(res)
 
@@ -129,7 +135,7 @@ def login_email(request):
     user_data = serializer.data
     user_data.pop('password', None)
 
-    res = {'token': token.key, 'message': {'user': user_data}}
+    res = {'message': {'user': user_data, 'token': token.key}}
     pprint(res)
     return Response(res)
 
@@ -138,8 +144,35 @@ def login_email(request):
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def test_token(request):
+    print("\n\n\n\n\n\n\n\n\n\n\n\n\n")
+    pprint(request)
+    print("\n\n\n\n\n\n\n\n\n\n\n\n\n")
     return Response("passed for {}".format(request.user.email))
 
 @api_view(['GET'])
 def halo(request):
     return Response("helo")
+
+
+
+@api_view(['POST'])
+def get_user_by_token(request):
+    token_key = request.data.get('token')
+
+    if not token_key:
+        return Response({"message": "Token is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        # Get the token object
+        token = Token.objects.get(key=token_key)
+        user = token.user
+
+        # Serialize the user information
+        serializer = UserSerializer(user)
+        user_data = serializer.data
+        user_data.pop('password', None)  # Remove the password field if present
+
+        return Response({"user": user_data}, status=status.HTTP_200_OK)
+
+    except Token.DoesNotExist:
+        return Response({"message": "Invalid token."}, status=status.HTTP_404_NOT_FOUND)
