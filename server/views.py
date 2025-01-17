@@ -21,7 +21,6 @@ from pprint import pprint
 def add_seen_networks(request):
     pprint(request.data)
 
-    # Expecting a 'networks' key in the request data
     for network in request.data.get('networks', []):
         serializer = NetworkSerializer(data=network)
         if not serializer.is_valid():
@@ -33,7 +32,6 @@ def add_seen_networks(request):
     all_networks = Network.objects.all()
     all_networks_serializer = NetworkSerializer(all_networks, many=True)
 
-    # Construct the response
     res = {
         'message': all_networks_serializer.data,
     }
@@ -144,9 +142,7 @@ def login_email(request):
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
 def test_token(request):
-    print("\n\n\n\n\n\n\n\n\n\n\n\n\n")
     pprint(request)
-    print("\n\n\n\n\n\n\n\n\n\n\n\n\n")
     return Response("passed for {}".format(request.user.email))
 
 @api_view(['GET'])
@@ -163,14 +159,13 @@ def get_user_by_token(request):
         return Response({"message": "Token is required."}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        # Get the token object
         token = Token.objects.get(key=token_key)
         user = token.user
 
         # Serialize the user information
         serializer = UserSerializer(user)
         user_data = serializer.data
-        user_data.pop('password', None)  # Remove the password field if present
+        user_data.pop('password', None)
 
         return Response({"user": user_data}, status=status.HTTP_200_OK)
 
